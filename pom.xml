@@ -85,6 +85,12 @@
 
 	<dependencies>
 
+		<dependency>
+			<groupId>org.colston.sclib</groupId>
+			<artifactId>sclib</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+
 		<!-- For unit tests -->
 		<dependency>
 			<groupId>org.junit.jupiter</groupId>
