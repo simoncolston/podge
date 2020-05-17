@@ -1,5 +1,6 @@
 package org.colston.podge;
 
+import java.awt.BorderLayout;
 import java.awt.Image;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -8,14 +9,17 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
+import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSplitPane;
 import javax.swing.JToolBar;
 
 import org.colston.sclib.gui.GuiApp;
@@ -35,6 +39,8 @@ public class PodgeMain extends GuiApp
 	}
 
 	private JPanel mainPanel;
+
+	private static final Logger logger = Logger.getLogger(PodgeMain.class.getName());
 	
 	@Override
 	protected Icon getSplashIcon()
@@ -48,6 +54,12 @@ public class PodgeMain extends GuiApp
 	protected String getApplicationName()
 	{
 		return APPLICATION_NAME;
+	}
+
+	@Override
+	protected String getConfigDirName()
+	{
+		return ".podgemail";
 	}
 
 	@Override
@@ -137,7 +149,16 @@ public class PodgeMain extends GuiApp
 	@Override
 	protected JComponent createMainPanel()
 	{
-		mainPanel = new JPanel();
+		mainPanel = new JPanel(new BorderLayout());
+		
+		JLabel folders = new JLabel("Folders");
+		JLabel list = new JLabel("List");
+		JLabel thread = new JLabel("Thread");
+		JLabel text = new JLabel("Text");
+		JSplitPane listSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, list, thread);
+		JSplitPane textSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, listSplit, text);
+		JSplitPane p = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, folders, textSplit);
+		mainPanel.add(p, BorderLayout.CENTER);
 		return mainPanel;
 	}
 
@@ -149,5 +170,11 @@ public class PodgeMain extends GuiApp
 	protected JMenuBar createMenuBar()
 	{
 		return new JMenuBar();
+	}
+
+	@Override
+	protected Logger getLogger()
+	{
+		return logger;
 	}
 }
