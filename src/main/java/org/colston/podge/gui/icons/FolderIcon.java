@@ -10,6 +10,17 @@ public class FolderIcon extends IconBase
 	private static final int[] xtab    = new int[] {PAD,         PAD,     PAD + 5, PAD + 5};
 	private static final int[] ytab    = new int[] {PAD + P + P, PAD + P, PAD + P, PAD + P + P};
 	
+	private static final FolderIcon icon = new FolderIcon();
+	
+	private FolderIcon()
+	{
+	}
+	
+	public static FolderIcon get()
+	{
+		return icon;
+	}
+
 	@Override
 	protected void paintIcon(Graphics2D g2)
 	{

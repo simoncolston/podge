@@ -9,6 +9,17 @@ public class DraftsIcon extends IconBase
 	private static final int[] xPoints = new int[] {DIM - PAD - H - P, DIM - PAD - H - P, DIM - PAD - P};
 	private static final int[] yPoints = new int[] {PAD,               PAD + H,           PAD + H};
 	
+	private static final DraftsIcon icon = new DraftsIcon();
+	
+	private DraftsIcon()
+	{
+	}
+	
+	public static DraftsIcon get()
+	{
+		return icon;
+	}
+
 	@Override
 	protected void paintIcon(Graphics2D g2)
 	{

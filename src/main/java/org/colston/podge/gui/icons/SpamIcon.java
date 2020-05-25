@@ -4,7 +4,17 @@ import java.awt.Graphics2D;
 
 public class SpamIcon extends IconBase
 {
+	private static final SpamIcon icon = new SpamIcon();
 	
+	private SpamIcon()
+	{
+	}
+	
+	public static SpamIcon get()
+	{
+		return icon;
+	}
+
 	@Override
 	protected void paintIcon(Graphics2D g2)
 	{

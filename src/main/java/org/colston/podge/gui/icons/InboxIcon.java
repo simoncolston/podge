@@ -7,6 +7,17 @@ public class InboxIcon extends IconBase
 	private static final int p = DIM / 2;
 	private static final int q = 3 * DIM / 5;
 	
+	private static final InboxIcon icon = new InboxIcon();
+	
+	private InboxIcon()
+	{
+	}
+	
+	public static InboxIcon get()
+	{
+		return icon;
+	}
+
 	@Override
 	protected void paintIcon(Graphics2D g2)
 	{

@@ -4,6 +4,17 @@ import java.awt.Graphics2D;
 
 public class SentIcon extends IconBase
 {
+	private static final SentIcon icon = new SentIcon();
+	
+	private SentIcon()
+	{
+	}
+	
+	public static SentIcon get()
+	{
+		return icon;
+	}
+
 	@Override
 	protected void paintIcon(Graphics2D g2)
 	{

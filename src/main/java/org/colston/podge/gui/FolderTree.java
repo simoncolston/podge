@@ -1,6 +1,9 @@
 package org.colston.podge.gui;
 
 import java.awt.Component;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.swing.Icon;
 import javax.swing.JLabel;
@@ -41,31 +44,31 @@ public final class FolderTree
 	
 	private Icon getIconFor(PodgeItem item)
 	{
+		if (item instanceof PodgeAccount)
+		{
+			return MailIcon.get();
+		}
 		if ("Inbox".equals(item.getDisplayName()))
 		{
-			return new InboxIcon();
+			return InboxIcon.get();
 		}
 		if ("Sent".equals(item.getDisplayName()))
 		{
-			return new SentIcon();
+			return SentIcon.get();
 		}
 		if ("Spam".equals(item.getDisplayName()))
 		{
-			return new SpamIcon();
+			return SpamIcon.get();
 		}
 		if ("Drafts".equals(item.getDisplayName()))
 		{
-			return new DraftsIcon();
+			return DraftsIcon.get();
 		}
 		if ("Bin".equals(item.getDisplayName()))
 		{
-			return new BinIcon();
+			return BinIcon.get();
 		}
-		if (item instanceof PodgeAccount)
-		{
-			return new MailIcon();
-		}
-		return new FolderIcon();
+		return FolderIcon.get();
 	}
 
 	public class PML implements PodgeModelListener

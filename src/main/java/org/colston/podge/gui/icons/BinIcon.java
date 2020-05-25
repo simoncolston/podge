@@ -12,7 +12,17 @@ public class BinIcon extends IconBase
 	private static final int[] ylid = new int[] {PAD + P, PAD + P,   PAD + P + H, PAD + P + H};
 	private static final int[] xbody = new int[] {PAD + P + 1,     DIM - PAD - P - 1, DIM - PAD - P - 1, PAD + P + 1};
 	private static final int[] ybody = new int[] {PAD + P + H, PAD + P + H,   DIM - PAD,     DIM - PAD};
+
+	private static final BinIcon icon = new BinIcon();
 	
+	private BinIcon()
+	{
+	}
+	
+	public static BinIcon get()
+	{
+		return icon;
+	}
 	
 	@Override
 	protected void paintIcon(Graphics2D g2)

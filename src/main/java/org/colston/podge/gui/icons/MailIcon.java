@@ -8,6 +8,17 @@ public class MailIcon extends IconBase
 	private static final int[] xPoints = new int[] {PAD,     DIM - PAD, DIM - PAD,     PAD};
 	private static final int[] yPoints = new int[] {PAD + P, PAD + P,   DIM - PAD - P, DIM - PAD - P};
 	
+	private static final MailIcon icon = new MailIcon();
+	
+	private MailIcon()
+	{
+	}
+	
+	public static MailIcon get()
+	{
+		return icon;
+	}
+	
 	@Override
 	protected void paintIcon(Graphics2D g2)
 	{
