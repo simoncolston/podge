@@ -9,9 +9,12 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
+import javax.mail.Authenticator;
+import javax.mail.Session;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
@@ -19,9 +22,15 @@ import javax.swing.JLabel;
 import javax.swing.JMenuBar;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
 import javax.swing.JToolBar;
 
+import org.colston.podge.gui.FolderTree;
+import org.colston.podge.gui.InteractiveAuthenticator;
+import org.colston.podge.gui.MessageList;
+import org.colston.podge.model.PodgeAccount;
+import org.colston.podge.model.PodgeModel;
 import org.colston.sclib.gui.GuiApp;
 import org.colston.sclib.i18n.Messages;
 
@@ -38,6 +47,7 @@ public class PodgeMain extends GuiApp
 		podge.start();
 	}
 
+	private PodgeModel model;
 	private JPanel mainPanel;
 
 	private static final Logger logger = Logger.getLogger(PodgeMain.class.getName());
@@ -67,12 +77,20 @@ public class PodgeMain extends GuiApp
 	{
 		return new WindowAdapter()
 		{
+			
+			@Override
+			public void windowOpened(WindowEvent e)
+			{
+				//TODO take this off the event thread
+				model.getAccounts().forEach(PodgeAccount::connect);
+			}
 
 			@Override
 			public void windowClosing(WindowEvent e)
 			{
 				if (true) //TODO: if all work is finished and saved
 				{
+					model.disconnectAll();
 					getFrame().dispose();
 					return;
 				}
@@ -147,17 +165,36 @@ public class PodgeMain extends GuiApp
 	}
 
 	@Override
+	protected void loadApplicationData()
+	{
+		Authenticator auth = new InteractiveAuthenticator(getFrame());
+		Properties props = new Properties();
+		props.put("mail.from", "simon@colston.org");
+		props.put("mail.user", "simon@colston.org");
+		props.put("mail.store.protocol", "imap");
+		props.put("mail.imap.host", "mail.lcn.com");
+		props.put("mail.imap.port", "993");
+		props.put("mail.imap.ssl.enable", "true");
+//		props.put("mail.imap.starttls.enable", "true");
+//		props.put("mail.imap.starttls.required", "true");
+		Session session = Session.getInstance(props, auth);
+		session.setDebug(true);
+		model = new PodgeModel();
+		model.addAccount(new PodgeAccount(model, session));
+	}
+
+	@Override
 	protected JComponent createMainPanel()
 	{
 		mainPanel = new JPanel(new BorderLayout());
 		
-		JLabel folders = new JLabel("Folders");
-		JLabel list = new JLabel("List");
+		FolderTree ft = new FolderTree(model);
+		MessageList ml = new MessageList(ft.getComponent());
 		JLabel thread = new JLabel("Thread");
 		JLabel text = new JLabel("Text");
-		JSplitPane listSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, list, thread);
+		JSplitPane listSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, new JScrollPane(ml.getComponent()), thread);
 		JSplitPane textSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, listSplit, text);
-		JSplitPane p = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, folders, textSplit);
+		JSplitPane p = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, new JScrollPane(ft.getComponent()), textSplit);
 		mainPanel.add(p, BorderLayout.CENTER);
 		return mainPanel;
 	}
