@@ -3,16 +3,17 @@ package org.colston.podge.model;
 import java.util.List;
 
 import javax.mail.AuthenticationFailedException;
-import javax.mail.Folder;
 import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.mail.Store;
+
+import com.sun.mail.imap.IMAPFolder;
 
 public class PodgeAccount implements PodgeItem
 {
 	private Session session;
 	private Store store;
-	private Folder defaultFolder;
+	private IMAPFolder defaultFolder;
 	private List<PodgeFolder> folders;
 	private PodgeModel model;
 	
@@ -39,11 +40,10 @@ public class PodgeAccount implements PodgeItem
 		
 	}
 
-	void setDefaultFolder(Folder defaultFolder)
+	void setDefaultFolder(IMAPFolder defaultFolder)
 	{
 		this.defaultFolder = defaultFolder;
 	}
-	
 
 	void setFolders(List<PodgeFolder> folders)
 	{
@@ -58,7 +58,7 @@ public class PodgeAccount implements PodgeItem
 		}
 		catch (AuthenticationFailedException e)
 		{
-			//TODO display a message somehwhere or re-show the dialogue?
+			//TODO display a message somewhere or re-show the dialogue?
 			System.err.printf("Authentication failed: %s%n", e.getMessage());
 		}
 		catch (MessagingException e)
@@ -110,8 +110,14 @@ public class PodgeAccount implements PodgeItem
 	}
 
 	@Override
-	public String getDisplayName()
+	public String getName()
 	{
 		return session.getProperty("mail.user");
+	}
+
+	@Override
+	public String getDisplayText()
+	{
+		return getName();
 	}
 }

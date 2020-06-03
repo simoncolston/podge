@@ -1,20 +1,24 @@
 package org.colston.podge.gui;
 
 import javax.swing.JTable;
-import javax.swing.JTree;
 import javax.swing.event.TreeSelectionEvent;
 import javax.swing.event.TreeSelectionListener;
 
+import org.colston.podge.model.PodgeFolder;
+import org.colston.podge.model.PodgeModel;
+import org.colston.podge.model.PodgeModelEvent;
+import org.colston.podge.model.PodgeModelListener;
+
 public class MessageList
 {
-	private MessageListModel model;
+	private MessageListModel tableModel;
 	private JTable table;
 
-	public MessageList(JTree tree)
+	public MessageList(PodgeModel model)
 	{
-		tree.addTreeSelectionListener(new TSL());
-		model = new MessageListModel();
-		table = new JTable(model);
+		model.addPodgeModelListener(new PML());
+		tableModel = new MessageListModel();
+		table = new JTable(tableModel);
 	}
 	
 	public JTable getComponent()
@@ -28,6 +32,26 @@ public class MessageList
 		public void valueChanged(TreeSelectionEvent e)
 		{
 			System.out.println("Tree selection: " + e.toString());
+		}
+	}
+	
+	private class PML implements PodgeModelListener
+	{
+
+		@Override
+		public void accountConnected(PodgeModelEvent e)
+		{
+		}
+
+		@Override
+		public void foldersInserted(PodgeModelEvent e)
+		{
+		}
+
+		@Override
+		public void folderSelected(PodgeModelEvent e)
+		{
+			tableModel.setFolder((PodgeFolder) e.getItem());
 		}
 	}
 }

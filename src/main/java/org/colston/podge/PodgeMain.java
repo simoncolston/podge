@@ -189,7 +189,7 @@ public class PodgeMain extends GuiApp
 		mainPanel = new JPanel(new BorderLayout());
 		
 		FolderTree ft = new FolderTree(model);
-		MessageList ml = new MessageList(ft.getComponent());
+		MessageList ml = new MessageList(model);
 		JLabel thread = new JLabel("Thread");
 		JLabel text = new JLabel("Text");
 		JSplitPane listSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, new JScrollPane(ml.getComponent()), thread);

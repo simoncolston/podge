@@ -1,14 +1,12 @@
 package org.colston.podge.gui;
 
 import java.awt.Component;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JTree;
 import javax.swing.tree.DefaultTreeCellRenderer;
+import javax.swing.tree.TreePath;
 
 import org.colston.podge.gui.icons.BinIcon;
 import org.colston.podge.gui.icons.DraftsIcon;
@@ -48,23 +46,23 @@ public final class FolderTree
 		{
 			return MailIcon.get();
 		}
-		if ("Inbox".equals(item.getDisplayName()))
+		if ("Inbox".equals(item.getDisplayText()))
 		{
 			return InboxIcon.get();
 		}
-		if ("Sent".equals(item.getDisplayName()))
+		if ("Sent".equals(item.getDisplayText()))
 		{
 			return SentIcon.get();
 		}
-		if ("Spam".equals(item.getDisplayName()))
+		if ("Spam".equals(item.getDisplayText()))
 		{
 			return SpamIcon.get();
 		}
-		if ("Drafts".equals(item.getDisplayName()))
+		if ("Drafts".equals(item.getDisplayText()))
 		{
 			return DraftsIcon.get();
 		}
-		if ("Bin".equals(item.getDisplayName()))
+		if ("Bin".equals(item.getDisplayText()))
 		{
 			return BinIcon.get();
 		}
@@ -74,9 +72,24 @@ public final class FolderTree
 	public class PML implements PodgeModelListener
 	{
 		@Override
+		public void folderSelected(PodgeModelEvent e)
+		{
+			Object[] path = treeModel.calculatePath(e.getItem());
+			TreePath tp = new TreePath(path);
+			tree.scrollPathToVisible(tp);
+			tree.setSelectionPath(tp);
+		}
+
+		@Override
 		public void accountConnected(PodgeModelEvent e)
 		{
 			treeModel.fireTreeNodesChanged(e.getSource(), e.getItem());
+		}
+
+		@Override
+		public void foldersInserted(PodgeModelEvent e)
+		{
+			treeModel.fireTreeNodesInserted(e.getSource(), e.getParent(), e.getItems());
 		}
 	}
 
@@ -89,7 +102,7 @@ public final class FolderTree
 			JLabel l = (JLabel) super.getTreeCellRendererComponent(tree, value, selected, expanded, leaf, row, hasFocus);
 			PodgeItem item = (PodgeItem) value;
 			l.setIcon(getIconFor(item));
-			l.setText(item.getDisplayName());
+			l.setText(item.getDisplayText());
 			return l;
 		}
 	}

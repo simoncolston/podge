@@ -1,6 +1,7 @@
 package org.colston.podge.gui;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.swing.event.EventListenerList;
@@ -10,18 +11,15 @@ import javax.swing.tree.TreeModel;
 import javax.swing.tree.TreePath;
 
 import org.colston.podge.model.PodgeItem;
-import org.colston.podge.model.PodgeModel;
 
 public class FolderTreeModel implements TreeModel
 {
 	private PodgeItem root;
-	private PodgeModel model;
 	private EventListenerList listeners = new EventListenerList();
 	
-	public FolderTreeModel(PodgeModel model)
+	public FolderTreeModel(PodgeItem root)
 	{
-		this.root = model;
-		this.model = model;
+		this.root = root;
 	}
 	
 	@Override
@@ -85,15 +83,28 @@ public class FolderTreeModel implements TreeModel
 			l.treeNodesChanged(e);
 		}
 	}
+	
+	protected void fireTreeNodesInserted(Object source, PodgeItem parent, List<? extends PodgeItem> items)
+	{
+		Object[] path = calculatePath(parent);
+		int[] childIndices = new int[items.size()];
+		Arrays.parallelSetAll(childIndices, p -> p);
+		Object[] children = items.toArray();
+		TreeModelEvent e = new TreeModelEvent(source, path, childIndices, children);
+		for (TreeModelListener l : listeners.getListeners(TreeModelListener.class))
+		{
+			l.treeNodesInserted(e);
+		}
+	}
 
-	private Object[] calculatePath(PodgeItem item)
+	protected Object[] calculatePath(PodgeItem item)
 	{
 		List<Object> path = new ArrayList<>();
 		calculatePath(path, item);
 		return path.toArray();
 	}
 
-	private void calculatePath(List<Object> path, PodgeItem item)
+	protected void calculatePath(List<Object> path, PodgeItem item)
 	{
 		path.add(0, item);
 		if (item == root)

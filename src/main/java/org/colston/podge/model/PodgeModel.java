@@ -10,8 +10,9 @@ import java.util.stream.Collectors;
 import javax.mail.Folder;
 import javax.mail.MessagingException;
 import javax.mail.Store;
-import javax.swing.Icon;
 import javax.swing.event.EventListenerList;
+
+import com.sun.mail.imap.IMAPFolder;
 
 public class PodgeModel implements PodgeItem
 {
@@ -37,14 +38,47 @@ public class PodgeModel implements PodgeItem
 		store.connect();
 		fireAccountConnected(account);
 		
-		Folder defaultFolder = store.getDefaultFolder();
+		IMAPFolder defaultFolder = (IMAPFolder) store.getDefaultFolder();
 		account.setDefaultFolder(defaultFolder);
 		List<Folder> fs = Arrays.asList(defaultFolder.list());
-		Collections.sort(fs, new FolderComparator());
-		List<PodgeFolder> folders = fs.stream().map(f -> new PodgeFolder(f, account)).collect(Collectors.toList());
+		List<PodgeFolder> folders = fs.stream().map(f -> new PodgeFolder((IMAPFolder) f, account)).collect(Collectors.toList());
+		Collections.sort(folders, new FolderComparator());
 		account.setFolders(folders);
+		fireFoldersInserted(account, folders);
+
+		addSubFolders(folders);
+		
+		//open inbox
+		PodgeFolder inbox = folders.get(0);
+		inbox.getFolder().open(Folder.READ_ONLY);
+		inbox.getFolder().getMessages();  //load all messages ready in the cache
+		fireFolderSelected(inbox);
 	}
 
+	private void addSubFolders(List<PodgeFolder> pfolders) throws MessagingException
+	{
+		for (PodgeFolder pfolder : pfolders)
+		{
+			Folder[] list = pfolder.getFolder().list();
+			if (list.length == 0)
+			{
+				continue;
+			}
+			List<Folder> fs = Arrays.asList(list);
+			List<PodgeFolder> folders = fs.stream().map(f -> new PodgeFolder((IMAPFolder) f, pfolder)).collect(Collectors.toList());
+			Collections.sort(folders, new FolderComparator());
+			pfolder.setFolders(folders);
+			fireFoldersInserted(pfolder, folders);
+			
+			addSubFolders(folders);
+		}
+	}
+
+	private List<PodgeFolder> processFolders(PodgeFolder parent, IMAPFolder folder)
+	{
+		
+	}
+	
 	public void disconnectAll()
 	{
 		accounts.forEach(PodgeAccount::disconnect);
@@ -75,7 +109,7 @@ public class PodgeModel implements PodgeItem
 	}
 
 	@Override
-	public String getDisplayName()
+	public String getDisplayText()
 	{
 		return "ROOT";
 	}
@@ -90,6 +124,15 @@ public class PodgeModel implements PodgeItem
 		listeners.remove(PodgeModelListener.class, l);
 	}
 
+	private void fireFolderSelected(PodgeFolder podgeFolder)
+	{
+		PodgeModelEvent e = new PodgeModelEvent(this, podgeFolder);
+		for (PodgeModelListener l : listeners.getListeners(PodgeModelListener.class))
+		{
+			l.folderSelected(e);
+		}
+	}
+	
 	private void fireAccountConnected(PodgeAccount account)
 	{
 		PodgeModelEvent e = new PodgeModelEvent(this, account);
@@ -98,8 +141,17 @@ public class PodgeModel implements PodgeItem
 			l.accountConnected(e);
 		}
 	}
-	
-	private static class FolderComparator implements Comparator<Folder>
+
+	private void fireFoldersInserted(PodgeItem account, List<PodgeFolder> folders)
+	{
+		PodgeModelEvent e = new PodgeModelEvent(this, account, folders);
+		for (PodgeModelListener l : listeners.getListeners(PodgeModelListener.class))
+		{
+			l.foldersInserted(e);
+		}
+	}
+
+	private static class FolderComparator implements Comparator<PodgeFolder>
 	{
 		private static String[] SS = new String[] {
 			"junk", "trash", "drafts", "sent", "inbox"
@@ -107,7 +159,7 @@ public class PodgeModel implements PodgeItem
 		private static List<String> SPECIALS = Arrays.asList(SS);
 		
 		@Override
-		public int compare(Folder o1, Folder o2)
+		public int compare(PodgeFolder o1, PodgeFolder o2)
 		{
 			int s1 = SPECIALS.indexOf(o1.getName().toLowerCase());
 			int s2 = SPECIALS.indexOf(o2.getName().toLowerCase());

@@ -4,14 +4,21 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-import javax.mail.Folder;
+import javax.mail.Message;
+import javax.mail.MessagingException;
+
+import com.sun.mail.imap.IMAPFolder;
 
 public class PodgeFolder implements PodgeItem
 {
+	private static final Logger logger = Logger.getLogger(PodgeFolder.class.getName());
+	
 	private static Map<String, String> nameMap = new HashMap<>(3);
 	
-	private Folder folder;
+	private IMAPFolder folder;
 	private PodgeItem parent;
 	private List<PodgeFolder> childFolders = new ArrayList<>();
 
@@ -22,12 +29,22 @@ public class PodgeFolder implements PodgeItem
 		nameMap.put("Junk", "Spam");
 	}
 	
-	public PodgeFolder(Folder folder, PodgeItem parent)
+	public PodgeFolder(IMAPFolder folder, PodgeItem parent)
 	{
 		this.folder = folder;
 		this.parent = parent;
 	}
 
+	protected IMAPFolder getFolder()
+	{
+		return folder;
+	}
+
+	protected void setFolders(List<PodgeFolder> folders)
+	{
+		this.childFolders = folders;
+	}
+	
 	@Override
 	public PodgeItem getChild(int index)
 	{
@@ -53,9 +70,41 @@ public class PodgeFolder implements PodgeItem
 	}
 
 	@Override
-	public String getDisplayName()
+	public String getName()
 	{
 		String name = folder.getName();
 		return nameMap.containsKey(name) ? nameMap.get(name) : name;
+	}
+
+	@Override
+	public String getDisplayText()
+	{
+		return getName();
+	}
+
+	public int getMessageCount()
+	{
+		try
+		{
+			return folder.getMessageCount();
+		}
+		catch (MessagingException e)
+		{
+			logger.log(Level.SEVERE, "Getting message count", e);
+		}
+		return 0;
+	}
+
+	public Message getMessage(int rowIndex)
+	{
+		try
+		{
+			return folder.getMessages()[rowIndex];
+		}
+		catch (MessagingException e)
+		{
+			logger.log(Level.SEVERE, "Getting message", e);
+		}
+		return null;
 	}
 }
