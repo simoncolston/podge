@@ -16,6 +16,7 @@ import org.colston.podge.gui.icons.MailIcon;
 import org.colston.podge.gui.icons.SentIcon;
 import org.colston.podge.gui.icons.SpamIcon;
 import org.colston.podge.model.PodgeAccount;
+import org.colston.podge.model.PodgeFolder;
 import org.colston.podge.model.PodgeItem;
 import org.colston.podge.model.PodgeModel;
 import org.colston.podge.model.PodgeModelEvent;
@@ -31,6 +32,7 @@ public final class FolderTree
 		model.addPodgeModelListener(new PML());
 		treeModel = new FolderTreeModel(model);
 		tree = new JTree(treeModel);
+		tree.addTreeSelectionListener(e -> model.selectFolder((PodgeFolder) e.getPath().getLastPathComponent()));
 		tree.setCellRenderer(new TCR());
 		tree.setRootVisible(false);
 	}

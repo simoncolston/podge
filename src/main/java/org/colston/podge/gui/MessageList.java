@@ -1,8 +1,6 @@
 package org.colston.podge.gui;
 
 import javax.swing.JTable;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
 
 import org.colston.podge.model.PodgeFolder;
 import org.colston.podge.model.PodgeModel;
@@ -24,15 +22,6 @@ public class MessageList
 	public JTable getComponent()
 	{
 		return table;
-	}
-	
-	public class TSL implements TreeSelectionListener
-	{
-		@Override
-		public void valueChanged(TreeSelectionEvent e)
-		{
-			System.out.println("Tree selection: " + e.toString());
-		}
 	}
 	
 	private class PML implements PodgeModelListener

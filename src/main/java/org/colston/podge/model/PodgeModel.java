@@ -5,6 +5,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import javax.mail.Folder;
@@ -16,10 +18,12 @@ import com.sun.mail.imap.IMAPFolder;
 
 public class PodgeModel implements PodgeItem
 {
+	private static final Logger logger = Logger.getLogger(PodgeModel.class.getName());
+	
 	private EventListenerList listeners = new EventListenerList();
 	
 	private List<PodgeAccount> accounts = new ArrayList<>();
-
+	private PodgeFolder currentFolder;
 	
 	public void addAccount(PodgeAccount a)
 	{
@@ -39,49 +43,67 @@ public class PodgeModel implements PodgeItem
 		fireAccountConnected(account);
 		
 		IMAPFolder defaultFolder = (IMAPFolder) store.getDefaultFolder();
-		account.setDefaultFolder(defaultFolder);
-		List<Folder> fs = Arrays.asList(defaultFolder.list());
-		List<PodgeFolder> folders = fs.stream().map(f -> new PodgeFolder((IMAPFolder) f, account)).collect(Collectors.toList());
-		Collections.sort(folders, new FolderComparator());
-		account.setFolders(folders);
-		fireFoldersInserted(account, folders);
+		account.setFolder(defaultFolder);
+		List<PodgeFolder> folders = processFolders(account);
 
 		addSubFolders(folders);
 		
 		//open inbox
 		PodgeFolder inbox = folders.get(0);
-		inbox.getFolder().open(Folder.READ_ONLY);
-		inbox.getFolder().getMessages();  //load all messages ready in the cache
-		fireFolderSelected(inbox);
+		selectFolder(inbox);
 	}
 
 	private void addSubFolders(List<PodgeFolder> pfolders) throws MessagingException
 	{
 		for (PodgeFolder pfolder : pfolders)
 		{
-			Folder[] list = pfolder.getFolder().list();
-			if (list.length == 0)
+			List<PodgeFolder> folders = processFolders(pfolder);
+			if (folders.isEmpty())
 			{
 				continue;
 			}
-			List<Folder> fs = Arrays.asList(list);
-			List<PodgeFolder> folders = fs.stream().map(f -> new PodgeFolder((IMAPFolder) f, pfolder)).collect(Collectors.toList());
-			Collections.sort(folders, new FolderComparator());
-			pfolder.setFolders(folders);
-			fireFoldersInserted(pfolder, folders);
-			
 			addSubFolders(folders);
 		}
 	}
 
-	private List<PodgeFolder> processFolders(PodgeFolder parent, IMAPFolder folder)
+	private List<PodgeFolder> processFolders(PodgeFolder parent) throws MessagingException
 	{
-		
+		Folder[] list = parent.getFolder().list();
+		if (list.length == 0)
+		{
+			Collections.emptyList();
+		}
+		List<Folder> fs = Arrays.asList(list);
+		List<PodgeFolder> folders = fs.stream()
+				.map(f -> new PodgeFolder((IMAPFolder) f, parent))
+				.sorted(new FolderComparator())
+				.collect(Collectors.toList());
+		parent.setFolders(folders);
+		fireFoldersInserted(parent, folders);
+		return folders;
 	}
 	
 	public void disconnectAll()
 	{
 		accounts.forEach(PodgeAccount::disconnect);
+	}
+	
+	public void selectFolder(PodgeFolder f)
+	{
+		try
+		{
+			if (currentFolder != null && currentFolder.getFolder().isOpen())
+			{
+				currentFolder.getFolder().close();
+			}
+			currentFolder = f;
+			currentFolder.getFolder().open(Folder.READ_ONLY);
+			fireFolderSelected(currentFolder);
+		}
+		catch (MessagingException e)
+		{
+			logger.log(Level.SEVERE, "Problem changing current folder", e);
+		}
 	}
 	
 	@Override
@@ -109,9 +131,15 @@ public class PodgeModel implements PodgeItem
 	}
 
 	@Override
-	public String getDisplayText()
+	public String getName()
 	{
 		return "ROOT";
+	}
+
+	@Override
+	public String getDisplayText()
+	{
+		return getName();
 	}
 
 	public void addPodgeModelListener(PodgeModelListener l)

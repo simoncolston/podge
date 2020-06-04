@@ -29,17 +29,27 @@ public class PodgeFolder implements PodgeItem
 		nameMap.put("Junk", "Spam");
 	}
 	
+	protected PodgeFolder(PodgeItem parent)
+	{
+		this(null, parent);
+	}
+	
 	public PodgeFolder(IMAPFolder folder, PodgeItem parent)
 	{
 		this.folder = folder;
 		this.parent = parent;
 	}
-
+	
 	protected IMAPFolder getFolder()
 	{
 		return folder;
 	}
 
+	protected void setFolder(IMAPFolder folder)
+	{
+		this.folder = folder;
+	}
+	
 	protected void setFolders(List<PodgeFolder> folders)
 	{
 		this.childFolders = folders;
@@ -72,14 +82,14 @@ public class PodgeFolder implements PodgeItem
 	@Override
 	public String getName()
 	{
-		String name = folder.getName();
-		return nameMap.containsKey(name) ? nameMap.get(name) : name;
+		return folder.getName();
 	}
 
 	@Override
 	public String getDisplayText()
 	{
-		return getName();
+		String name = getName();
+		return nameMap.containsKey(name) ? nameMap.get(name) : name;
 	}
 
 	public int getMessageCount()
