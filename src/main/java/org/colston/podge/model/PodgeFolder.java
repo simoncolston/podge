@@ -4,11 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import javax.mail.Message;
-import javax.mail.MessagingException;
 
 import com.sun.mail.imap.IMAPFolder;
 
@@ -21,6 +17,7 @@ public class PodgeFolder implements PodgeItem
 	private IMAPFolder folder;
 	private PodgeItem parent;
 	private List<PodgeFolder> childFolders = new ArrayList<>();
+	private List<PodgeMessage> messages = new ArrayList<>();
 
 	static
 	{
@@ -94,27 +91,27 @@ public class PodgeFolder implements PodgeItem
 
 	public int getMessageCount()
 	{
-		try
-		{
-			return folder.getMessageCount();
-		}
-		catch (MessagingException e)
-		{
-			logger.log(Level.SEVERE, "Getting message count", e);
-		}
-		return 0;
+		return messages.size();
 	}
 
-	public Message getMessage(int rowIndex)
+	public PodgeMessage getMessage(int rowIndex)
 	{
-		try
-		{
-			return folder.getMessages()[rowIndex];
-		}
-		catch (MessagingException e)
-		{
-			logger.log(Level.SEVERE, "Getting message", e);
-		}
-		return null;
+		return messages.get(rowIndex);
+	}
+	
+	protected void addMessage(PodgeMessage m)
+	{
+		messages.add(m);
+	}
+	
+	protected void setMessages(List<PodgeMessage> ms)
+	{
+		messages.clear();
+		messages.addAll(ms);
+	}
+
+	protected void clearMessages()
+	{
+		messages.clear();
 	}
 }

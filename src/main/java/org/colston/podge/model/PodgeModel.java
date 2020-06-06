@@ -2,19 +2,27 @@ package org.colston.podge.model;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import javax.mail.FetchProfile;
 import javax.mail.Folder;
+import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.Store;
+import javax.mail.search.ComparisonTerm;
+import javax.mail.search.SearchTerm;
+import javax.mail.search.SentDateTerm;
 import javax.swing.event.EventListenerList;
 
 import com.sun.mail.imap.IMAPFolder;
+import com.sun.mail.imap.IMAPMessage;
 
 public class PodgeModel implements PodgeItem
 {
@@ -97,7 +105,19 @@ public class PodgeModel implements PodgeItem
 				currentFolder.getFolder().close();
 			}
 			currentFolder = f;
+			currentFolder.clearMessages();
 			currentFolder.getFolder().open(Folder.READ_ONLY);
+			Calendar c = Calendar.getInstance();
+			c.set(2020, 4, 18);
+			SearchTerm term = new SentDateTerm(ComparisonTerm.GE, c.getTime());
+			Message[] messages = currentFolder.getFolder().search(term);
+			FetchProfile fp = new FetchProfile();
+			fp.add(FetchProfile.Item.ENVELOPE);
+			currentFolder.getFolder().fetch(messages, fp);
+			for (Message a : messages)
+			{
+				currentFolder.addMessage(new PodgeMessage((IMAPMessage) a));
+			}
 			fireFolderSelected(currentFolder);
 		}
 		catch (MessagingException e)

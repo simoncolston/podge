@@ -1,11 +1,12 @@
 package org.colston.podge.gui;
 
+import java.util.StringJoiner;
+
 import javax.mail.Address;
-import javax.mail.Message;
-import javax.mail.MessagingException;
 import javax.swing.table.AbstractTableModel;
 
 import org.colston.podge.model.PodgeFolder;
+import org.colston.podge.model.PodgeMessage;
 
 public class MessageListModel extends AbstractTableModel
 {
@@ -18,6 +19,13 @@ public class MessageListModel extends AbstractTableModel
 	}
 
 	@Override
+	public String getColumnName(int column)
+	{
+		return "";
+	}
+
+
+	@Override
 	public int getColumnCount()
 	{
 		return 4;
@@ -26,43 +34,29 @@ public class MessageListModel extends AbstractTableModel
 	@Override
 	public Object getValueAt(int rowIndex, int columnIndex)
 	{
-		Message m = folder.getMessage(rowIndex);
-		try
+		PodgeMessage m = folder.getMessage(rowIndex);
+		switch (columnIndex)
 		{
-			switch (columnIndex)
-			{
-			case 0:
-				return toText(m.getFrom());
-			case 1:
-				return m.getSubject();
-			case 2:
-				return m.getSentDate();
-			case 3:
-				return m.getMessageNumber();
-			}
-		}
-		catch (MessagingException e)
-		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		case 0:
+			return toText(m.getFrom());
+		case 1:
+			return m.getSubject();
+		case 2:
+			return m.getSentDate();
+		case 3:
+			return "*";
 		}
 		return "Hello!";
 	}
 	
-	private Object toText(Address[] from)
+	private String toText(Address[] from)
 	{
-		StringBuilder sb = new StringBuilder();
-		boolean first = true;
+		StringJoiner j = new StringJoiner("; "); 
 		for (Address a : from)
 		{
-			if (!first)
-			{
-				sb.append("; "); 
-			}
-			sb.append(a.toString());
-			first = false;
+			j.add(a.toString());
 		}
-		return sb.toString();
+		return j.toString();
 	}
 
 	protected void setFolder(PodgeFolder folder)
