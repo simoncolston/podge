@@ -1,9 +1,11 @@
 package org.colston.podge.model;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
-import java.util.Date;
 
 import javax.mail.Address;
+import javax.mail.Flags;
 import javax.mail.Message;
 import javax.mail.MessagingException;
 import javax.mail.internet.InternetAddress;
@@ -15,15 +17,18 @@ public class PodgeMessage
 	private InternetAddress[] from;
 	private InternetAddress[] to;
 	private String subject;
-	private Date sentDate;
+	private LocalDateTime sentDate;
+	private boolean seen;
 	
 	public PodgeMessage(IMAPMessage a) throws MessagingException
 	{
-		this.from = Arrays.copyOf(a.getFrom(), a.getFrom().length, InternetAddress[].class);
-//		Address[] ato = a.getRecipients(Message.RecipientType.TO);
-//		this.to = Arrays.copyOf(ato, ato.length, InternetAddress[].class);
+		Address[] af = a.getFrom();
+		this.from = af == null ? new InternetAddress[0] : Arrays.copyOf(af, af.length, InternetAddress[].class);
+		Address[] ato = a.getRecipients(Message.RecipientType.TO);
+		this.to = ato == null ? new InternetAddress[0] : Arrays.copyOf(ato, ato.length, InternetAddress[].class);
 		this.subject = a.getSubject();
-		this.sentDate = a.getSentDate();
+		this.sentDate = LocalDateTime.ofInstant(a.getSentDate().toInstant(), ZoneId.systemDefault());
+		seen = a.getFlags().contains(Flags.Flag.SEEN);
 	}
 
 	public InternetAddress[] getFrom()
@@ -41,8 +46,13 @@ public class PodgeMessage
 		return subject;
 	}
 
-	public Date getSentDate()
+	public LocalDateTime getSentDate()
 	{
 		return sentDate;
+	}
+
+	public boolean isSeen()
+	{
+		return seen;
 	}
 }

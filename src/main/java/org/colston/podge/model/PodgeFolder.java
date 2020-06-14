@@ -18,7 +18,8 @@ public class PodgeFolder implements PodgeItem
 	private PodgeItem parent;
 	private List<PodgeFolder> childFolders = new ArrayList<>();
 	private List<PodgeMessage> messages = new ArrayList<>();
-
+	private int totalMessageCount;
+	
 	static
 	{
 		nameMap.put("INBOX", "Inbox");
@@ -113,5 +114,15 @@ public class PodgeFolder implements PodgeItem
 	protected void clearMessages()
 	{
 		messages.clear();
+	}
+
+	public int getTotalMessageCount()
+	{
+		return totalMessageCount;
+	}
+
+	public void setTotalMessageCount(int totalMessageCount)
+	{
+		this.totalMessageCount = totalMessageCount;
 	}
 }

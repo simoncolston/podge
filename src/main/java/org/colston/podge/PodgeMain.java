@@ -1,6 +1,8 @@
 package org.colston.podge;
 
 import java.awt.BorderLayout;
+import java.awt.Font;
+import java.awt.GraphicsEnvironment;
 import java.awt.Image;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -10,6 +12,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
@@ -40,6 +43,8 @@ public class PodgeMain extends GuiApp
 
 	private static PodgeMain podge;
 	private static final String SPLASH_FILE_NAME = "splash.png";
+	
+	private static final Config config = new Config();
 
 	public static void main(String[] args)
 	{
@@ -181,6 +186,11 @@ public class PodgeMain extends GuiApp
 		session.setDebug(true);
 		model = new PodgeModel();
 		model.addAccount(new PodgeAccount(model, session));
+		
+		for (Font f : GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts())
+		{
+			getLogger().log(Level.FINE, "Font: {0}", f.toString());
+		}
 	}
 
 	@Override
@@ -189,10 +199,10 @@ public class PodgeMain extends GuiApp
 		mainPanel = new JPanel(new BorderLayout());
 		
 		FolderTree ft = new FolderTree(model);
-		MessageList ml = new MessageList(model);
+		MessageList ml = new MessageList(config, model);
 		JLabel thread = new JLabel("Thread");
 		JLabel text = new JLabel("Text");
-		JSplitPane listSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, new JScrollPane(ml.getComponent()), thread);
+		JSplitPane listSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, ml.getComponent(), thread);
 		JSplitPane textSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, listSplit, text);
 		JSplitPane p = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, new JScrollPane(ft.getComponent()), textSplit);
 		mainPanel.add(p, BorderLayout.CENTER);
@@ -212,6 +222,7 @@ public class PodgeMain extends GuiApp
 	@Override
 	protected Logger getLogger()
 	{
+		logger.setLevel(Level.ALL);
 		return logger;
 	}
 }

@@ -1,11 +1,11 @@
 package org.colston.podge.model;
 
+import java.sql.Date;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -106,17 +106,32 @@ public class PodgeModel implements PodgeItem
 			}
 			currentFolder = f;
 			currentFolder.clearMessages();
-			currentFolder.getFolder().open(Folder.READ_ONLY);
-			Calendar c = Calendar.getInstance();
-			c.set(2020, 4, 18);
-			SearchTerm term = new SentDateTerm(ComparisonTerm.GE, c.getTime());
-			Message[] messages = currentFolder.getFolder().search(term);
-			FetchProfile fp = new FetchProfile();
-			fp.add(FetchProfile.Item.ENVELOPE);
-			currentFolder.getFolder().fetch(messages, fp);
-			for (Message a : messages)
+			if (currentFolder.getFolder() != null && (currentFolder.getFolder().getType() & Folder.HOLDS_MESSAGES) > 0)
 			{
-				currentFolder.addMessage(new PodgeMessage((IMAPMessage) a));
+				currentFolder.getFolder().open(Folder.READ_ONLY);
+				
+				int count = currentFolder.getFolder().getMessageCount();
+				currentFolder.setTotalMessageCount(count);
+				Message[] messages;
+				if (count > 500)
+				{
+					LocalDate now = LocalDate.of(2020, 5, 18);
+					SearchTerm term = new SentDateTerm(ComparisonTerm.GE, Date.valueOf(now));
+					messages = currentFolder.getFolder().search(term);
+				}
+				else 
+				{
+					messages = currentFolder.getFolder().getMessages();
+				}
+				
+				FetchProfile fp = new FetchProfile();
+				fp.add(FetchProfile.Item.ENVELOPE);
+				fp.add(FetchProfile.Item.FLAGS);
+				currentFolder.getFolder().fetch(messages, fp);
+				for (Message a : messages)
+				{
+					currentFolder.addMessage(new PodgeMessage((IMAPMessage) a));
+				}
 			}
 			fireFolderSelected(currentFolder);
 		}
