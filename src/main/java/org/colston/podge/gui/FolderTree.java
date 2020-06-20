@@ -81,6 +81,7 @@ public final class FolderTree
 			TreePath tp = new TreePath(path);
 			tree.scrollPathToVisible(tp);
 			tree.setSelectionPath(tp);
+			treeModel.fireTreeNodesChanged(e.getSource(), e.getItem());
 		}
 
 		@Override

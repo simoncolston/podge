@@ -86,6 +86,14 @@ public class PodgeModel implements PodgeItem
 				.map(f -> new PodgeFolder((IMAPFolder) f, parent))
 				.sorted(new FolderComparator())
 				.collect(Collectors.toList());
+		for (PodgeFolder f : folders)
+		{
+			if (f.getFolder() != null && (f.getFolder().getType() & Folder.HOLDS_MESSAGES) > 0)
+			{
+				int ucount = f.getFolder().getUnreadMessageCount();
+				f.setUnreadMessageCount(ucount);
+			}
+		}
 		parent.setFolders(folders);
 		fireFoldersInserted(parent, folders);
 		return folders;
@@ -109,28 +117,37 @@ public class PodgeModel implements PodgeItem
 			if (currentFolder.getFolder() != null && (currentFolder.getFolder().getType() & Folder.HOLDS_MESSAGES) > 0)
 			{
 				currentFolder.getFolder().open(Folder.READ_ONLY);
-				
-				int count = currentFolder.getFolder().getMessageCount();
-				currentFolder.setTotalMessageCount(count);
-				Message[] messages;
-				if (count > 500)
+				try
 				{
-					LocalDate now = LocalDate.of(2020, 5, 18);
-					SearchTerm term = new SentDateTerm(ComparisonTerm.GE, Date.valueOf(now));
-					messages = currentFolder.getFolder().search(term);
+					int ucount = f.getFolder().getUnreadMessageCount();
+					f.setUnreadMessageCount(ucount);
+					
+					int count = currentFolder.getFolder().getMessageCount();
+					currentFolder.setTotalMessageCount(count);
+					Message[] messages;
+					if (count > 500)
+					{
+						LocalDate now = LocalDate.of(2020, 5, 18);
+						SearchTerm term = new SentDateTerm(ComparisonTerm.GE, Date.valueOf(now));
+						messages = currentFolder.getFolder().search(term);
+					}
+					else 
+					{
+						messages = currentFolder.getFolder().getMessages();
+					}
+					
+					FetchProfile fp = new FetchProfile();
+					fp.add(FetchProfile.Item.ENVELOPE);
+					fp.add(FetchProfile.Item.FLAGS);
+					currentFolder.getFolder().fetch(messages, fp);
+					for (Message a : messages)
+					{
+						currentFolder.addMessage(new PodgeMessage((IMAPMessage) a));
+					}
 				}
-				else 
+				finally
 				{
-					messages = currentFolder.getFolder().getMessages();
-				}
-				
-				FetchProfile fp = new FetchProfile();
-				fp.add(FetchProfile.Item.ENVELOPE);
-				fp.add(FetchProfile.Item.FLAGS);
-				currentFolder.getFolder().fetch(messages, fp);
-				for (Message a : messages)
-				{
-					currentFolder.addMessage(new PodgeMessage((IMAPMessage) a));
+					currentFolder.getFolder().close();
 				}
 			}
 			fireFolderSelected(currentFolder);

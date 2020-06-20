@@ -7,8 +7,8 @@ import javax.mail.Address;
 import javax.swing.Icon;
 import javax.swing.table.AbstractTableModel;
 
-import org.colston.podge.gui.icons.FolderIcon;
 import org.colston.podge.gui.icons.MailIcon;
+import org.colston.podge.gui.icons.Read;
 import org.colston.podge.model.PodgeFolder;
 import org.colston.podge.model.PodgeMessage;
 
@@ -35,7 +35,7 @@ public class MessageListModel extends AbstractTableModel
 		case 2:
 			return m.getSentDate();
 		case 3:
-			return m.isSeen() ? FolderIcon.get() : MailIcon.get();
+			return m.isSeen() ? Read.get() : MailIcon.get();
 		}
 		return "Hello!";
 	}

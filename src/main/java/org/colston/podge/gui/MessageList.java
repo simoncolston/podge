@@ -49,12 +49,17 @@ public class MessageList
 		
 		tableModel = new MessageListModel();
 		table = new JTable(tableModel);
-		JScrollPane scr = new JScrollPane(table);
 		table.getSelectionModel().addListSelectionListener(new LSL());
-		initialiseColumns(200, 500, 200, 26);
+		initialiseColumns();
 		table.setDefaultRenderer(LocalDateTime.class, dateTimeRenderer);
 		table.setDefaultRenderer(String.class, stringRenderer);
 		table.setRowHeight(MailIcon.get().getIconHeight());
+		
+		//both required to get rid of grid and spacing
+		table.setShowGrid(false);
+		table.setIntercellSpacing(new Dimension(0, 0));
+		
+		JScrollPane scr = new JScrollPane(table);
 		panel.add(scr, BorderLayout.CENTER);
 		
 		JPanel info = new JPanel(new BorderLayout());
@@ -68,15 +73,27 @@ public class MessageList
 		panel.add(info, BorderLayout.NORTH);
 	}
 	
-	private void initialiseColumns(int ... widths)
+	private void initialiseColumns()
 	{
 		table.setAutoResizeMode(JTable.AUTO_RESIZE_NEXT_COLUMN);
 		int total = 0;
-		for (int i = 0; i < widths.length; i++)
-		{
-			table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
-			total += widths[i];
-		}
+		int w = 200;
+		table.getColumnModel().getColumn(0).setPreferredWidth(w);
+		total += w;
+		w = 500;
+		table.getColumnModel().getColumn(1).setPreferredWidth(w);
+		total += w;
+		w = 200;
+		table.getColumnModel().getColumn(2).setPreferredWidth(w);
+		table.getColumnModel().getColumn(2).setMaxWidth(w);
+		table.getColumnModel().getColumn(2).setMinWidth(w);
+		total += w;
+		w = 26;
+		table.getColumnModel().getColumn(3).setPreferredWidth(w);
+		table.getColumnModel().getColumn(3).setMaxWidth(w);
+		table.getColumnModel().getColumn(3).setMinWidth(w);
+		total += w;
+
 		Dimension d = table.getPreferredScrollableViewportSize();
 		d.width = total;
 		d.height = table.getRowHeight() * 12;

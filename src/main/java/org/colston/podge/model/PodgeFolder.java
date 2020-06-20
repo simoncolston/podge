@@ -19,6 +19,8 @@ public class PodgeFolder implements PodgeItem
 	private List<PodgeFolder> childFolders = new ArrayList<>();
 	private List<PodgeMessage> messages = new ArrayList<>();
 	private int totalMessageCount;
+	private int unreadMessageCount;
+
 	
 	static
 	{
@@ -87,7 +89,12 @@ public class PodgeFolder implements PodgeItem
 	public String getDisplayText()
 	{
 		String name = getName();
-		return nameMap.containsKey(name) ? nameMap.get(name) : name;
+		name = nameMap.containsKey(name) ? nameMap.get(name) : name;
+		if (unreadMessageCount > 0)
+		{
+			name += String.format(" (%d)", unreadMessageCount);
+		}
+		return name;
 	}
 
 	public int getMessageCount()
@@ -124,5 +131,10 @@ public class PodgeFolder implements PodgeItem
 	public void setTotalMessageCount(int totalMessageCount)
 	{
 		this.totalMessageCount = totalMessageCount;
+	}
+
+	public void setUnreadMessageCount(int ucount)
+	{
+		this.unreadMessageCount = ucount;
 	}
 }
