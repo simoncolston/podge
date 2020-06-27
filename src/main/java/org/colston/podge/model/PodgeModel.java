@@ -12,6 +12,9 @@ import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
 import javax.mail.FetchProfile;
+import javax.mail.Flags.Flag;
+import javax.mail.event.MessageChangedEvent;
+import javax.mail.event.MessageChangedListener;
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -32,6 +35,9 @@ public class PodgeModel implements PodgeItem
 	
 	private List<PodgeAccount> accounts = new ArrayList<>();
 	private PodgeFolder currentFolder;
+
+	private MessageChangedListener messageChangedListener = e -> logger.fine(
+			() -> String.format("*** messageChanged: %s, %d%n", e.getMessage(), e.getMessage().getMessageNumber()));;
 	
 	public void addAccount(PodgeAccount a)
 	{
@@ -101,6 +107,7 @@ public class PodgeModel implements PodgeItem
 	
 	public void disconnectAll()
 	{
+		closeCurrentFolder();
 		accounts.forEach(PodgeAccount::disconnect);
 	}
 	
@@ -108,46 +115,37 @@ public class PodgeModel implements PodgeItem
 	{
 		try
 		{
-			if (currentFolder != null && currentFolder.getFolder().isOpen())
-			{
-				currentFolder.getFolder().close();
-			}
+			closeCurrentFolder();
 			currentFolder = f;
+			currentFolder.getFolder().addMessageChangedListener(messageChangedListener);
 			currentFolder.clearMessages();
 			if (currentFolder.getFolder() != null && (currentFolder.getFolder().getType() & Folder.HOLDS_MESSAGES) > 0)
 			{
-				currentFolder.getFolder().open(Folder.READ_ONLY);
-				try
+				currentFolder.getFolder().open(Folder.READ_WRITE);
+				int ucount = f.getFolder().getUnreadMessageCount();
+				f.setUnreadMessageCount(ucount);
+				
+				int count = currentFolder.getFolder().getMessageCount();
+				currentFolder.setTotalMessageCount(count);
+				Message[] messages;
+				if (count > 500)
 				{
-					int ucount = f.getFolder().getUnreadMessageCount();
-					f.setUnreadMessageCount(ucount);
-					
-					int count = currentFolder.getFolder().getMessageCount();
-					currentFolder.setTotalMessageCount(count);
-					Message[] messages;
-					if (count > 500)
-					{
-						LocalDate now = LocalDate.of(2020, 5, 18);
-						SearchTerm term = new SentDateTerm(ComparisonTerm.GE, Date.valueOf(now));
-						messages = currentFolder.getFolder().search(term);
-					}
-					else 
-					{
-						messages = currentFolder.getFolder().getMessages();
-					}
-					
-					FetchProfile fp = new FetchProfile();
-					fp.add(FetchProfile.Item.ENVELOPE);
-					fp.add(FetchProfile.Item.FLAGS);
-					currentFolder.getFolder().fetch(messages, fp);
-					for (Message a : messages)
-					{
-						currentFolder.addMessage(new PodgeMessage((IMAPMessage) a));
-					}
+					LocalDate now = LocalDate.of(2020, 5, 18);
+					SearchTerm term = new SentDateTerm(ComparisonTerm.GE, Date.valueOf(now));
+					messages = currentFolder.getFolder().search(term);
 				}
-				finally
+				else 
 				{
-					currentFolder.getFolder().close();
+					messages = currentFolder.getFolder().getMessages();
+				}
+				
+				FetchProfile fp = new FetchProfile();
+				fp.add(FetchProfile.Item.ENVELOPE);
+				fp.add(FetchProfile.Item.FLAGS);
+				currentFolder.getFolder().fetch(messages, fp);
+				for (Message a : messages)
+				{
+					currentFolder.addMessage(new PodgeMessage((IMAPMessage) a));
 				}
 			}
 			fireFolderSelected(currentFolder);
@@ -158,6 +156,37 @@ public class PodgeModel implements PodgeItem
 		}
 	}
 	
+	private void closeCurrentFolder()
+	{
+		try
+		{
+			if (currentFolder != null && currentFolder.getFolder().isOpen())
+			{
+				currentFolder.getFolder().removeMessageChangedListener(messageChangedListener);
+				currentFolder.getFolder().close();
+			}
+		}
+		catch (MessagingException e)
+		{
+			logger.log(Level.SEVERE, e, () -> String.format("Error closing current folder: %s", e.getMessage()));
+		}
+	}
+
+	public void toggleSeen(PodgeMessage message)
+	{
+		try
+		{
+			boolean set = message.getMessage().isSet(Flag.SEEN);
+			message.getMessage().setFlag(Flag.SEEN, !set);
+			message.setSeen(!set);
+			fireMessageUpdated(message);
+		}
+		catch (MessagingException e)
+		{
+			logger.log(Level.SEVERE, "Problem toggling seen flag", e);
+		}
+	}
+
 	@Override
 	public PodgeItem getChild(int index)
 	{
@@ -202,6 +231,15 @@ public class PodgeModel implements PodgeItem
 	public void removePodgeModelListener(PodgeModelListener l)
 	{
 		listeners.remove(PodgeModelListener.class, l);
+	}
+
+	private void fireMessageUpdated(PodgeMessage message)
+	{
+		PodgeModelEvent e = new PodgeModelEvent(this, message);
+		for (PodgeModelListener l : listeners.getListeners(PodgeModelListener.class))
+		{
+			l.messageUpdated(e);
+		}
 	}
 
 	private void fireFolderSelected(PodgeFolder podgeFolder)
@@ -250,5 +288,4 @@ public class PodgeModel implements PodgeItem
 			return o1.getName().compareToIgnoreCase(o2.getName());
 		}
 	}
-
 }

@@ -8,6 +8,7 @@ public class PodgeModelEvent extends EventObject
 {
 	private PodgeItem parent;
 	private List<? extends PodgeItem> items;
+	private PodgeMessage message;
 
 	public PodgeModelEvent(Object source, PodgeItem item)
 	{
@@ -20,6 +21,12 @@ public class PodgeModelEvent extends EventObject
 		super(source);
 		this.parent = parent;
 		this.items = items;
+	}
+
+	public PodgeModelEvent(Object source, PodgeMessage message)
+	{
+		super(source);
+		this.message = message;
 	}
 
 	public PodgeItem getParent()
@@ -35,5 +42,10 @@ public class PodgeModelEvent extends EventObject
 	public List<? extends PodgeItem> getItems()
 	{
 		return items;
+	}
+	
+	public PodgeMessage getMessage()
+	{
+		return message;
 	}
 }

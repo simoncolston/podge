@@ -107,6 +107,11 @@ public class PodgeFolder implements PodgeItem
 		return messages.get(rowIndex);
 	}
 	
+	public int getIndexOfMessage(PodgeMessage message)
+	{
+		return messages.indexOf(message);
+	}
+	
 	protected void addMessage(PodgeMessage m)
 	{
 		messages.add(m);

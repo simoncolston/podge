@@ -4,6 +4,8 @@ import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Rectangle;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.logging.Logger;
@@ -31,6 +33,7 @@ public class MessageList
 	private static final Logger logger = Logger.getLogger(MessageList.class.getName());
 	
 	private Config config;
+	private PodgeModel model;
 	private MessageListModel tableModel;
 	private JTable table;
 	private JPanel panel;
@@ -40,17 +43,20 @@ public class MessageList
 	private TableCellRenderer dateTimeRenderer = new LocalDateTimeTableCellRenderer();
 	private TableCellRenderer stringRenderer = new StringTableCellRenderer();
 
+
 	public MessageList(Config config, PodgeModel model)
 	{
 		this.config = config;
+		this.model = model;
 		model.addPodgeModelListener(new PML());
 
 		panel = new JPanel(new BorderLayout());
 		
 		tableModel = new MessageListModel();
 		table = new JTable(tableModel);
-		table.getSelectionModel().addListSelectionListener(new LSL());
 		initialiseColumns();
+		table.addMouseListener(new MSL());
+		table.getSelectionModel().addListSelectionListener(new LSL());
 		table.setDefaultRenderer(LocalDateTime.class, dateTimeRenderer);
 		table.setDefaultRenderer(String.class, stringRenderer);
 		table.setRowHeight(MailIcon.get().getIconHeight());
@@ -150,6 +156,28 @@ public class MessageList
 			table.scrollRectToVisible(r);
 			
 			countLabel.setText(String.format("[%d/%d]", f.getMessageCount(), f.getTotalMessageCount()));
+		}
+
+		@Override
+		public void messageUpdated(PodgeModelEvent e)
+		{
+			tableModel.messageUpdated(e.getMessage());
+		}
+	}
+
+	public class MSL extends MouseAdapter
+	{
+		@Override
+		public void mouseClicked(MouseEvent e)
+		{
+			int col = table.columnAtPoint(e.getPoint());
+			if (col != 3)
+			{
+				return;
+			}
+			int row = table.rowAtPoint(e.getPoint());
+			PodgeMessage message = tableModel.getMessage(row);
+			model.toggleSeen(message);
 		}
 	}
 

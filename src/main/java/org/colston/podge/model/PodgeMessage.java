@@ -14,6 +14,7 @@ import com.sun.mail.imap.IMAPMessage;
 
 public class PodgeMessage
 {
+	private IMAPMessage message;
 	private InternetAddress[] from;
 	private InternetAddress[] to;
 	private String subject;
@@ -22,6 +23,7 @@ public class PodgeMessage
 	
 	public PodgeMessage(IMAPMessage a) throws MessagingException
 	{
+		this.message = a;
 		Address[] af = a.getFrom();
 		this.from = af == null ? new InternetAddress[0] : Arrays.copyOf(af, af.length, InternetAddress[].class);
 		Address[] ato = a.getRecipients(Message.RecipientType.TO);
@@ -54,5 +56,15 @@ public class PodgeMessage
 	public boolean isSeen()
 	{
 		return seen;
+	}
+	
+	public void setSeen(boolean s)
+	{
+		this.seen = s;
+	}
+	
+	public IMAPMessage getMessage()
+	{
+		return message;
 	}
 }

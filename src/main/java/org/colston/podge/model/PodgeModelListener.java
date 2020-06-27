@@ -9,4 +9,6 @@ public interface PodgeModelListener extends EventListener
 	void foldersInserted(PodgeModelEvent e);
 
 	void folderSelected(PodgeModelEvent e);
+
+	void messageUpdated(PodgeModelEvent e);
 }

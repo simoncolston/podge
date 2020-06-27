@@ -87,4 +87,10 @@ public class MessageListModel extends AbstractTableModel
 		this.folder = folder;
 		fireTableDataChanged();
 	}
+
+	public void messageUpdated(PodgeMessage message)
+	{
+		int row = folder.getIndexOfMessage(message);
+		fireTableRowsUpdated(row, row);
+	}
 }

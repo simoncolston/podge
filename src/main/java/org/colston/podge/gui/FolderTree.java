@@ -95,6 +95,13 @@ public final class FolderTree
 		{
 			treeModel.fireTreeNodesInserted(e.getSource(), e.getParent(), e.getItems());
 		}
+
+		@Override
+		public void messageUpdated(PodgeModelEvent e)
+		{
+			// TODO Auto-generated method stub
+			
+		}
 	}
 
 	public class TCR extends DefaultTreeCellRenderer
