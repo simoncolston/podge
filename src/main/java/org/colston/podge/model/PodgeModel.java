@@ -13,8 +13,6 @@ import java.util.stream.Collectors;
 
 import javax.mail.FetchProfile;
 import javax.mail.Flags.Flag;
-import javax.mail.event.MessageChangedEvent;
-import javax.mail.event.MessageChangedListener;
 import javax.mail.Folder;
 import javax.mail.Message;
 import javax.mail.MessagingException;
@@ -23,6 +21,8 @@ import javax.mail.search.ComparisonTerm;
 import javax.mail.search.SearchTerm;
 import javax.mail.search.SentDateTerm;
 import javax.swing.event.EventListenerList;
+
+import org.colston.sclib.gui.chore.Chore;
 
 import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPMessage;
@@ -35,9 +35,6 @@ public class PodgeModel implements PodgeItem
 	
 	private List<PodgeAccount> accounts = new ArrayList<>();
 	private PodgeFolder currentFolder;
-
-	private MessageChangedListener messageChangedListener = e -> logger.fine(
-			() -> String.format("*** messageChanged: %s, %d%n", e.getMessage(), e.getMessage().getMessageNumber()));;
 	
 	public void addAccount(PodgeAccount a)
 	{
@@ -117,7 +114,6 @@ public class PodgeModel implements PodgeItem
 		{
 			closeCurrentFolder();
 			currentFolder = f;
-			currentFolder.getFolder().addMessageChangedListener(messageChangedListener);
 			currentFolder.clearMessages();
 			if (currentFolder.getFolder() != null && (currentFolder.getFolder().getType() & Folder.HOLDS_MESSAGES) > 0)
 			{
@@ -162,7 +158,6 @@ public class PodgeModel implements PodgeItem
 		{
 			if (currentFolder != null && currentFolder.getFolder().isOpen())
 			{
-				currentFolder.getFolder().removeMessageChangedListener(messageChangedListener);
 				currentFolder.getFolder().close();
 			}
 		}
@@ -174,17 +169,25 @@ public class PodgeModel implements PodgeItem
 
 	public void toggleSeen(PodgeMessage message)
 	{
-		try
+		Chore<Void> chore = new Chore<Void>()
 		{
-			boolean set = message.getMessage().isSet(Flag.SEEN);
-			message.getMessage().setFlag(Flag.SEEN, !set);
-			message.setSeen(!set);
-			fireMessageUpdated(message);
-		}
-		catch (MessagingException e)
-		{
-			logger.log(Level.SEVERE, "Problem toggling seen flag", e);
-		}
+
+			@Override
+			protected Void doChore() throws Exception
+			{
+				boolean set = message.getMessage().isSet(Flag.SEEN);
+				message.getMessage().setFlag(Flag.SEEN, !set);
+				message.setSeen(!set);
+				return null;
+			}
+
+			@Override
+			protected void updateUI()
+			{
+				fireMessageUpdated(message);
+			}
+		};
+		chore.execute();
 	}
 
 	@Override

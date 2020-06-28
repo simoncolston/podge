@@ -49,23 +49,23 @@ public final class FolderTree
 		{
 			return MailIcon.get();
 		}
-		if ("Inbox".equals(item.getDisplayText()))
+		if ("Inbox".equals(item.getName()))
 		{
 			return InboxIcon.get();
 		}
-		if ("Sent".equals(item.getDisplayText()))
+		if ("Sent".equals(item.getName()))
 		{
 			return SentIcon.get();
 		}
-		if ("Spam".equals(item.getDisplayText()))
+		if ("Spam".equals(item.getName()))
 		{
 			return SpamIcon.get();
 		}
-		if ("Drafts".equals(item.getDisplayText()))
+		if ("Drafts".equals(item.getName()))
 		{
 			return DraftsIcon.get();
 		}
-		if ("Bin".equals(item.getDisplayText()))
+		if ("Bin".equals(item.getName()))
 		{
 			return BinIcon.get();
 		}

@@ -1,6 +1,7 @@
 package org.colston.podge;
 
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
@@ -35,6 +36,7 @@ import org.colston.podge.gui.MessageList;
 import org.colston.podge.model.PodgeAccount;
 import org.colston.podge.model.PodgeModel;
 import org.colston.sclib.gui.GuiApp;
+import org.colston.sclib.gui.chore.Chore;
 import org.colston.sclib.i18n.Messages;
 
 public class PodgeMain extends GuiApp
@@ -187,17 +189,20 @@ public class PodgeMain extends GuiApp
 		model = new PodgeModel();
 		model.addAccount(new PodgeAccount(model, session));
 		
-		for (Font f : GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts())
-		{
-			getLogger().log(Level.FINE, "Font: {0}", f.toString());
-		}
+//		for (Font f : GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts())
+//		{
+//			getLogger().log(Level.FINE, "Font: {0}", f.toString());
+//		}
 	}
 
 	@Override
 	protected JComponent createMainPanel()
 	{
-		mainPanel = new JPanel(new BorderLayout());
+		//use this opportunity to set the initial size of the window
+		getFrame().setPreferredSize(new Dimension(1200, 800));
+		Chore.getConfig().setRootPane(getFrame());
 		
+		mainPanel = new JPanel(new BorderLayout());
 		FolderTree ft = new FolderTree(model);
 		MessageList ml = new MessageList(config, model);
 		JLabel thread = new JLabel("Thread");
@@ -205,6 +210,7 @@ public class PodgeMain extends GuiApp
 		JSplitPane listSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, ml.getComponent(), thread);
 		JSplitPane textSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, listSplit, text);
 		JSplitPane p = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, new JScrollPane(ft.getComponent()), textSplit);
+		p.setDividerLocation(220);
 		mainPanel.add(p, BorderLayout.CENTER);
 		return mainPanel;
 	}
