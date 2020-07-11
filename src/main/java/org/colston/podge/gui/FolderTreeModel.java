@@ -71,6 +71,15 @@ public class FolderTreeModel implements TreeModel
 		listeners.remove(TreeModelListener.class, l);
 	}
 	
+	protected void fireTreeStructureChanged()
+	{
+		TreeModelEvent e = new TreeModelEvent(this, new Object[] {root});
+		for (TreeModelListener l : listeners.getListeners(TreeModelListener.class))
+		{
+			l.treeStructureChanged(e);
+		}
+	}
+	
 	protected void fireTreeNodesChanged(Object source, PodgeItem child)
 	{
 		PodgeItem parent = child.getParent();

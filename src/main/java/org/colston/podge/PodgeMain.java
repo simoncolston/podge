@@ -2,8 +2,6 @@ package org.colston.podge;
 
 import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GraphicsEnvironment;
 import java.awt.Image;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -18,6 +16,7 @@ import java.util.logging.Logger;
 
 import javax.imageio.ImageIO;
 import javax.mail.Authenticator;
+import javax.mail.MessagingException;
 import javax.mail.Session;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -34,6 +33,7 @@ import org.colston.podge.gui.FolderTree;
 import org.colston.podge.gui.InteractiveAuthenticator;
 import org.colston.podge.gui.MessageList;
 import org.colston.podge.model.PodgeAccount;
+import org.colston.podge.model.PodgeFolder;
 import org.colston.podge.model.PodgeModel;
 import org.colston.sclib.gui.GuiApp;
 import org.colston.sclib.gui.chore.Chore;
@@ -56,6 +56,8 @@ public class PodgeMain extends GuiApp
 
 	private PodgeModel model;
 	private JPanel mainPanel;
+
+	private FolderTree folderTree;
 
 	private static final Logger logger = Logger.getLogger(PodgeMain.class.getName());
 	
@@ -88,8 +90,16 @@ public class PodgeMain extends GuiApp
 			@Override
 			public void windowOpened(WindowEvent e)
 			{
-				//TODO take this off the event thread
-				model.getAccounts().forEach(PodgeAccount::connect);
+				//TODO: take this off the event thread but allow input for password!!!
+				try
+				{
+					model.connect();
+				}
+				catch (MessagingException e1)
+				{
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
 			}
 
 			@Override
@@ -97,7 +107,7 @@ public class PodgeMain extends GuiApp
 			{
 				if (true) //TODO: if all work is finished and saved
 				{
-					model.disconnectAll();
+					model.disconnect();
 					getFrame().dispose();
 					return;
 				}
@@ -187,7 +197,7 @@ public class PodgeMain extends GuiApp
 		Session session = Session.getInstance(props, auth);
 		session.setDebug(true);
 		model = new PodgeModel();
-		model.addAccount(new PodgeAccount(model, session));
+		model.setAccount(new PodgeAccount(model, session));
 		
 //		for (Font f : GraphicsEnvironment.getLocalGraphicsEnvironment().getAllFonts())
 //		{
@@ -203,13 +213,13 @@ public class PodgeMain extends GuiApp
 		Chore.getConfig().setRootPane(getFrame());
 		
 		mainPanel = new JPanel(new BorderLayout());
-		FolderTree ft = new FolderTree(model);
 		MessageList ml = new MessageList(config, model);
+		folderTree = new FolderTree(model, ml);
 		JLabel thread = new JLabel("Thread");
 		JLabel text = new JLabel("Text");
 		JSplitPane listSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, ml.getComponent(), thread);
 		JSplitPane textSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, true, listSplit, text);
-		JSplitPane p = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, new JScrollPane(ft.getComponent()), textSplit);
+		JSplitPane p = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, true, new JScrollPane(folderTree.getComponent()), textSplit);
 		p.setDividerLocation(220);
 		mainPanel.add(p, BorderLayout.CENTER);
 		return mainPanel;

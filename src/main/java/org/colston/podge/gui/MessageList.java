@@ -25,8 +25,7 @@ import org.colston.podge.gui.icons.MailIcon;
 import org.colston.podge.model.PodgeFolder;
 import org.colston.podge.model.PodgeMessage;
 import org.colston.podge.model.PodgeModel;
-import org.colston.podge.model.PodgeModelEvent;
-import org.colston.podge.model.PodgeModelListener;
+import org.colston.sclib.gui.chore.Chore;
 
 public class MessageList
 {
@@ -48,7 +47,6 @@ public class MessageList
 	{
 		this.config = config;
 		this.model = model;
-		model.addPodgeModelListener(new PML());
 
 		panel = new JPanel(new BorderLayout());
 		
@@ -111,6 +109,29 @@ public class MessageList
 		return panel;
 	}
 	
+	public void folderSelected(PodgeFolder f)
+	{
+		tableModel.setFolder(f);
+		/*
+		 * select last message in list
+		 */
+		int count = tableModel.getRowCount() - 1;
+		table.getSelectionModel().setSelectionInterval(count , count);
+		/*
+		 * scroll to that message - note the scroll to the top first is necessary when moving from a bigger folder
+		 * to a smaller folder. 
+		 */
+		Rectangle r = table.getCellRect(0, 0, true);
+		table.scrollRectToVisible(r);
+		r = table.getCellRect(count, 0, true);
+		table.scrollRectToVisible(r);
+		
+		int messageCount = f == null ? 0 : f.getMessageCount();
+		int totalMessageCount = f == null ? 0 : f.getTotalMessageCount();
+		countLabel.setText(String.format("[%d/%d]", messageCount, totalMessageCount));
+	}
+
+
 	private class LSL implements ListSelectionListener
 	{
 		
@@ -121,48 +142,6 @@ public class MessageList
 			
 		}
 		
-	}
-	
-	private class PML implements PodgeModelListener
-	{
-
-		@Override
-		public void accountConnected(PodgeModelEvent e)
-		{
-		}
-
-		@Override
-		public void foldersInserted(PodgeModelEvent e)
-		{
-		}
-
-		@Override
-		public void folderSelected(PodgeModelEvent e)
-		{
-			PodgeFolder f = (PodgeFolder) e.getItem();
-			tableModel.setFolder(f);
-			/*
-			 * select last message in list
-			 */
-			int count = tableModel.getRowCount() - 1;
-			table.getSelectionModel().setSelectionInterval(count , count);
-			/*
-			 * scroll to that message - note the scroll to the top first is necessary when moving from a bigger folder
-			 * to a smaller folder. 
-			 */
-			Rectangle r = table.getCellRect(0, 0, true);
-			table.scrollRectToVisible(r);
-			r = table.getCellRect(count, 0, true);
-			table.scrollRectToVisible(r);
-			
-			countLabel.setText(String.format("[%d/%d]", f.getMessageCount(), f.getTotalMessageCount()));
-		}
-
-		@Override
-		public void messageUpdated(PodgeModelEvent e)
-		{
-			tableModel.messageUpdated(e.getMessage());
-		}
 	}
 
 	public class MSL extends MouseAdapter
@@ -177,7 +156,22 @@ public class MessageList
 			}
 			int row = table.rowAtPoint(e.getPoint());
 			PodgeMessage message = tableModel.getMessage(row);
-			model.toggleSeen(message);
+			Chore<Boolean> chore = new Chore<Boolean>()
+			{
+				@Override
+				protected Boolean doChore() throws Exception
+				{
+					return model.toggleSeen(message);
+				}
+
+				@Override
+				protected void updateUI()
+				{
+					message.setSeen(get());
+					tableModel.messageUpdated(message);
+				}
+			};
+			chore.execute();
 		}
 	}
 

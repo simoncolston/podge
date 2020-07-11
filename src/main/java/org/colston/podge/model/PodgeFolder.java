@@ -117,7 +117,7 @@ public class PodgeFolder implements PodgeItem
 		messages.add(m);
 	}
 	
-	protected void setMessages(List<PodgeMessage> ms)
+	public void setMessages(List<PodgeMessage> ms)
 	{
 		messages.clear();
 		messages.addAll(ms);

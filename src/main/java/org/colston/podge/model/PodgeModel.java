@@ -2,12 +2,10 @@ package org.colston.podge.model;
 
 import java.sql.Date;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -22,8 +20,6 @@ import javax.mail.search.SearchTerm;
 import javax.mail.search.SentDateTerm;
 import javax.swing.event.EventListenerList;
 
-import org.colston.sclib.gui.chore.Chore;
-
 import com.sun.mail.imap.IMAPFolder;
 import com.sun.mail.imap.IMAPMessage;
 
@@ -33,20 +29,14 @@ public class PodgeModel implements PodgeItem
 	
 	private EventListenerList listeners = new EventListenerList();
 	
-	private List<PodgeAccount> accounts = new ArrayList<>();
-	private PodgeFolder currentFolder;
+	private PodgeAccount account = null;
 	
-	public void addAccount(PodgeAccount a)
+	public void setAccount(PodgeAccount a)
 	{
-		accounts.add(a);
+		account = a;
 	}
 	
-	public List<PodgeAccount> getAccounts()
-	{
-		return accounts;
-	}
-
-	public void connect(PodgeAccount account) throws MessagingException
+	public void connect() throws MessagingException
 	{
 		Store store = account.getSession().getStore();
 		account.setStore(store);
@@ -61,7 +51,7 @@ public class PodgeModel implements PodgeItem
 		
 		//open inbox
 		PodgeFolder inbox = folders.get(0);
-		selectFolder(inbox);
+		fireAccountConnected(inbox);
 	}
 
 	private void addSubFolders(List<PodgeFolder> pfolders) throws MessagingException
@@ -98,114 +88,91 @@ public class PodgeModel implements PodgeItem
 			}
 		}
 		parent.setFolders(folders);
-		fireFoldersInserted(parent, folders);
 		return folders;
 	}
 	
-	public void disconnectAll()
+	public void disconnect()
 	{
-		closeCurrentFolder();
-		accounts.forEach(PodgeAccount::disconnect);
-	}
-	
-	public void selectFolder(PodgeFolder f)
-	{
+		Store store = account.getStore();
+		if (store == null)
+		{
+			return;
+		}
 		try
 		{
-			closeCurrentFolder();
-			currentFolder = f;
-			currentFolder.clearMessages();
-			if (currentFolder.getFolder() != null && (currentFolder.getFolder().getType() & Folder.HOLDS_MESSAGES) > 0)
-			{
-				currentFolder.getFolder().open(Folder.READ_WRITE);
-				int ucount = f.getFolder().getUnreadMessageCount();
-				f.setUnreadMessageCount(ucount);
-				
-				int count = currentFolder.getFolder().getMessageCount();
-				currentFolder.setTotalMessageCount(count);
-				Message[] messages;
-				if (count > 500)
-				{
-					LocalDate now = LocalDate.of(2020, 5, 18);
-					SearchTerm term = new SentDateTerm(ComparisonTerm.GE, Date.valueOf(now));
-					messages = currentFolder.getFolder().search(term);
-				}
-				else 
-				{
-					messages = currentFolder.getFolder().getMessages();
-				}
-				
-				FetchProfile fp = new FetchProfile();
-				fp.add(FetchProfile.Item.ENVELOPE);
-				fp.add(FetchProfile.Item.FLAGS);
-				currentFolder.getFolder().fetch(messages, fp);
-				for (Message a : messages)
-				{
-					currentFolder.addMessage(new PodgeMessage((IMAPMessage) a));
-				}
-			}
-			fireFolderSelected(currentFolder);
+			store.close();
 		}
 		catch (MessagingException e)
 		{
-			logger.log(Level.SEVERE, "Problem changing current folder", e);
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
-	private void closeCurrentFolder()
+
+	public FolderUpdate changeCurrentFolder(PodgeFolder prev, PodgeFolder next) throws MessagingException
 	{
-		try
+		FolderUpdate update = new FolderUpdate();
+		if (prev != null && prev.getFolder().isOpen())
 		{
-			if (currentFolder != null && currentFolder.getFolder().isOpen())
+			prev.getFolder().close();
+		}
+		if (next != null && next.getFolder() != null && (next.getFolder().getType() & Folder.HOLDS_MESSAGES) > 0)
+		{
+			next.getFolder().open(Folder.READ_WRITE);
+			int ucount = next.getFolder().getUnreadMessageCount();
+			update.setUnreadMessageCount(ucount);
+			
+			int count = next.getFolder().getMessageCount();
+			update.setTotalMessageCount(count);
+			
+			Message[] messages;
+			if (count > 500)
 			{
-				currentFolder.getFolder().close();
+				LocalDate oneMonthAgo = LocalDate.now().minusMonths(1);
+				SearchTerm term = new SentDateTerm(ComparisonTerm.GE, Date.valueOf(oneMonthAgo));
+				messages = next.getFolder().search(term);
+			}
+			else 
+			{
+				messages = next.getFolder().getMessages();
+			}
+			
+			FetchProfile fp = new FetchProfile();
+			fp.add(FetchProfile.Item.ENVELOPE);
+			fp.add(FetchProfile.Item.FLAGS);
+			next.getFolder().fetch(messages, fp);
+			for (Message a : messages)
+			{
+				update.addMessage(new PodgeMessage((IMAPMessage) a));
 			}
 		}
-		catch (MessagingException e)
-		{
-			logger.log(Level.SEVERE, e, () -> String.format("Error closing current folder: %s", e.getMessage()));
-		}
+		return update;
 	}
 
-	public void toggleSeen(PodgeMessage message)
+	public boolean toggleSeen(PodgeMessage message) throws MessagingException
 	{
-		Chore<Void> chore = new Chore<Void>()
-		{
-
-			@Override
-			protected Void doChore() throws Exception
-			{
-				boolean set = message.getMessage().isSet(Flag.SEEN);
-				message.getMessage().setFlag(Flag.SEEN, !set);
-				message.setSeen(!set);
-				return null;
-			}
-
-			@Override
-			protected void updateUI()
-			{
-				fireMessageUpdated(message);
-			}
-		};
-		chore.execute();
+		boolean set = !(message.getMessage().isSet(Flag.SEEN));
+		message.getMessage().setFlag(Flag.SEEN, set);
+		return set;
 	}
 
 	@Override
 	public PodgeItem getChild(int index)
 	{
-		return accounts.get(index);
+		return account;
 	}
 
 	@Override
 	public int getChildCount()
 	{
-		return accounts.size();
+		return 1;
 	}
 
 	@Override
 	public int getIndexOfChild(PodgeItem child)
 	{
-		return accounts.indexOf(child);
+		return 0;
 	}
 
 	@Override
@@ -236,39 +203,16 @@ public class PodgeModel implements PodgeItem
 		listeners.remove(PodgeModelListener.class, l);
 	}
 
-	private void fireMessageUpdated(PodgeMessage message)
+	/**
+	 * Inform listeners that the account has connected.
+	 * @param folder the item that should be selected after connection e.g. the inbox folder
+	 */
+	private void fireAccountConnected(PodgeItem folder)
 	{
-		PodgeModelEvent e = new PodgeModelEvent(this, message);
-		for (PodgeModelListener l : listeners.getListeners(PodgeModelListener.class))
-		{
-			l.messageUpdated(e);
-		}
-	}
-
-	private void fireFolderSelected(PodgeFolder podgeFolder)
-	{
-		PodgeModelEvent e = new PodgeModelEvent(this, podgeFolder);
-		for (PodgeModelListener l : listeners.getListeners(PodgeModelListener.class))
-		{
-			l.folderSelected(e);
-		}
-	}
-	
-	private void fireAccountConnected(PodgeAccount account)
-	{
-		PodgeModelEvent e = new PodgeModelEvent(this, account);
+		PodgeModelEvent e = new PodgeModelEvent(this, folder);
 		for (PodgeModelListener l : listeners.getListeners(PodgeModelListener.class))
 		{
 			l.accountConnected(e);
-		}
-	}
-
-	private void fireFoldersInserted(PodgeItem account, List<PodgeFolder> folders)
-	{
-		PodgeModelEvent e = new PodgeModelEvent(this, account, folders);
-		for (PodgeModelListener l : listeners.getListeners(PodgeModelListener.class))
-		{
-			l.foldersInserted(e);
 		}
 	}
 

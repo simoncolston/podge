@@ -1,11 +1,13 @@
 package org.colston.podge.gui;
 
 import java.awt.Component;
-import java.awt.Dimension;
+import java.awt.EventQueue;
 
 import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JTree;
+import javax.swing.event.TreeSelectionEvent;
+import javax.swing.event.TreeSelectionListener;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.TreePath;
 
@@ -16,24 +18,31 @@ import org.colston.podge.gui.icons.InboxIcon;
 import org.colston.podge.gui.icons.MailIcon;
 import org.colston.podge.gui.icons.SentIcon;
 import org.colston.podge.gui.icons.SpamIcon;
+import org.colston.podge.model.FolderUpdate;
 import org.colston.podge.model.PodgeAccount;
 import org.colston.podge.model.PodgeFolder;
 import org.colston.podge.model.PodgeItem;
 import org.colston.podge.model.PodgeModel;
 import org.colston.podge.model.PodgeModelEvent;
 import org.colston.podge.model.PodgeModelListener;
+import org.colston.sclib.gui.chore.Chore;
 
 public final class FolderTree
 {
+	private PodgeModel model;
 	private JTree tree;
 	private FolderTreeModel treeModel;
+	private MessageList messageList;
 	
-	public FolderTree(PodgeModel model)
+	public FolderTree(PodgeModel model, MessageList messageList)
 	{
+		this.model = model;
 		model.addPodgeModelListener(new PML());
+		this.messageList = messageList;
+		
 		treeModel = new FolderTreeModel(model);
 		tree = new JTree(treeModel);
-		tree.addTreeSelectionListener(e -> model.selectFolder((PodgeFolder) e.getPath().getLastPathComponent()));
+		tree.addTreeSelectionListener(new TSL());
 		tree.setCellRenderer(new TCR());
 		tree.setRootVisible(false);
 	}
@@ -42,7 +51,7 @@ public final class FolderTree
 	{
 		return tree;
 	}
-	
+
 	private Icon getIconFor(PodgeItem item)
 	{
 		if (item instanceof PodgeAccount)
@@ -72,35 +81,63 @@ public final class FolderTree
 		return FolderIcon.get();
 	}
 
-	public class PML implements PodgeModelListener
+	private void accountConnected(PodgeFolder podgeFolder)
 	{
-		@Override
-		public void folderSelected(PodgeModelEvent e)
-		{
-			Object[] path = treeModel.calculatePath(e.getItem());
-			TreePath tp = new TreePath(path);
-			tree.scrollPathToVisible(tp);
-			tree.setSelectionPath(tp);
-			treeModel.fireTreeNodesChanged(e.getSource(), e.getItem());
-		}
-
+		treeModel.fireTreeStructureChanged();
+		Object[] p = treeModel.calculatePath(podgeFolder);
+		TreePath path = new TreePath(p );
+		tree.setSelectionPath(path);
+	}
+	
+	private class PML implements PodgeModelListener
+	{
 		@Override
 		public void accountConnected(PodgeModelEvent e)
 		{
-			treeModel.fireTreeNodesChanged(e.getSource(), e.getItem());
+			EventQueue.invokeLater(() -> {
+				FolderTree.this.accountConnected((PodgeFolder) e.getItem());
+			});
 		}
+	}
 
+	private class TSL implements TreeSelectionListener
+	{
 		@Override
-		public void foldersInserted(PodgeModelEvent e)
+		public void valueChanged(TreeSelectionEvent e)
 		{
-			treeModel.fireTreeNodesInserted(e.getSource(), e.getParent(), e.getItems());
-		}
+			TreePath olsp = e.getOldLeadSelectionPath();
+			PodgeFolder prev = olsp == null ? null : (PodgeFolder) olsp.getLastPathComponent();
+			TreePath nlsp = e.getNewLeadSelectionPath();
+			PodgeFolder next = nlsp == null ? null : (PodgeFolder) nlsp.getLastPathComponent();
+			Chore<FolderUpdate> chore = new Chore<>()
+			{
+				@Override
+				protected FolderUpdate doChore() throws Exception
+				{
+					return model.changeCurrentFolder(prev, next);
+				}
 
-		@Override
-		public void messageUpdated(PodgeModelEvent e)
-		{
-			// TODO Auto-generated method stub
-			
+				@Override
+				protected void updateUI()
+				{
+					FolderUpdate update = get();
+					
+					if (next != null) 
+					{
+						next.setUnreadMessageCount(update.getUnreadMessageCount());
+						next.setTotalMessageCount(update.getTotalMessageCount());
+						next.setMessages(update.getMessages());
+						treeModel.fireTreeNodesChanged(e.getSource(), next);
+						
+						Object[] path = treeModel.calculatePath(next);
+						TreePath tp = new TreePath(path);
+						tree.scrollPathToVisible(tp);
+					}
+					
+					messageList.folderSelected(next);
+				}
+			};
+			chore.execute();
 		}
 	}
 
